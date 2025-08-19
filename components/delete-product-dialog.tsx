@@ -31,12 +31,13 @@ export function DeleteProductDialog({ open, onOpenChange, product, onConfirm }: 
         </AlertDialogHeader>
         <AlertDialogFooter>
           <AlertDialogCancel>Cancel</AlertDialogCancel>
-          <AlertDialogAction
-            onClick={onConfirm}
-            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-          >
-            Delete Product
-          </AlertDialogAction>
+         <AlertDialogAction
+  onClick={onConfirm}
+  className="bg-destructive text-white dark:text-destructive-foreground hover:bg-destructive/90"
+>
+  Delete Product
+</AlertDialogAction>
+
         </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>
