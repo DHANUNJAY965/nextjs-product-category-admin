@@ -157,14 +157,27 @@ export default function ProductsPage() {
     return filteredProducts.slice(startIndex, endIndex)
   }, [filteredProducts, startIndex, endIndex])
 
-  // Enhanced pagination logic with sliding window
+  // Enhanced pagination logic with responsive sliding window
   const getPaginationPages = useCallback(() => {
     const pages = []
-    const delta = 2
+    // Responsive delta: fewer pages on mobile, more on desktop
+    const isMobile = typeof window !== 'undefined' && window.innerWidth < 640
+    const delta = isMobile ? 1 : 2
     const range = []
     
     // Don't show pagination if only one page
     if (totalPages <= 1) return []
+    
+    // For very small screens, show minimal pagination
+    if (isMobile && totalPages > 5) {
+      if (currentPage <= 3) {
+        return [1, 2, 3, '...', totalPages]
+      } else if (currentPage >= totalPages - 2) {
+        return [1, '...', totalPages - 2, totalPages - 1, totalPages]
+      } else {
+        return [1, '...', currentPage, '...', totalPages]
+      }
+    }
     
     for (let i = Math.max(2, currentPage - delta); 
          i <= Math.min(totalPages - 1, currentPage + delta); 
@@ -586,60 +599,97 @@ export default function ProductsPage() {
           </Card>
         )}
 
-        {/* Enhanced Pagination */}
+        {/* Enhanced Responsive Pagination */}
         {totalPages > 1 && (
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-            <p className="text-sm text-muted-foreground">
-              Showing {startIndex + 1} to{" "}
-              {Math.min(endIndex, totalFilteredProducts)} of {totalFilteredProducts} products
-            </p>
-            <div className="flex items-center space-x-1">
+          <div className="flex flex-col space-y-4 sm:space-y-0 sm:flex-row sm:items-center sm:justify-between">
+            {/* Mobile-first pagination info */}
+            <div className="text-sm text-muted-foreground text-center sm:text-left order-2 sm:order-1">
+              <span className="inline sm:hidden">
+                Page {currentPage} of {totalPages}
+              </span>
+              <span className="hidden sm:inline">
+                Showing {startIndex + 1} to{" "}
+                {Math.min(endIndex, totalFilteredProducts)} of {totalFilteredProducts} products
+              </span>
+            </div>
+            
+            {/* Responsive pagination controls */}
+            <div className="flex items-center justify-center space-x-1 order-1 sm:order-2">
+              {/* Previous button - always visible */}
               <Button
                 variant="outline"
                 size="sm"
                 onClick={() => handlePageChange(Math.max(currentPage - 1, 1))}
                 disabled={currentPage === 1}
-                className="h-9 px-3"
+                className="h-8 px-2 sm:h-9 sm:px-3 text-xs sm:text-sm"
               >
-                <ChevronLeft className="h-4 w-4 mr-1" />
-                Previous
+                <ChevronLeft className="h-3 w-3 sm:h-4 sm:w-4 sm:mr-1" />
+                <span className="hidden sm:inline">Previous</span>
               </Button>
               
+              {/* Page numbers - responsive display */}
               <div className="flex items-center space-x-1">
-                {getPaginationPages().map((page, index) => {
-                  if (page === '...') {
+                {/* Mobile: Show only current page input for many pages */}
+                {totalPages > 7 && (
+                  <div className="flex sm:hidden items-center space-x-2">
+                    <input
+                      type="number"
+                      min="1"
+                      max={totalPages}
+                      value={currentPage}
+                      onChange={(e) => {
+                        const page = Math.max(1, Math.min(totalPages, parseInt(e.target.value) || 1))
+                        handlePageChange(page)
+                      }}
+                      className="w-12 h-8 text-xs text-center border rounded px-1 bg-background"
+                    />
+                    <span className="text-xs text-muted-foreground">of {totalPages}</span>
+                  </div>
+                )}
+                
+                {/* Desktop and mobile with fewer pages: Show page buttons */}
+                <div className={`flex items-center space-x-1 ${totalPages > 7 ? 'hidden sm:flex' : 'flex'}`}>
+                  {getPaginationPages().map((page, index) => {
+                    if (page === '...') {
+                      return (
+                        <span key={`ellipsis-${index}`} className="px-1 sm:px-2 py-1 text-muted-foreground text-xs sm:text-sm">
+                          ...
+                        </span>
+                      )
+                    }
+                    
+                    const pageNum = Number(page)
                     return (
-                      <span key={`ellipsis-${index}`} className="px-2 py-1 text-muted-foreground">
-                        ...
-                      </span>
+                      <Button
+                        key={pageNum}
+                        variant={currentPage === pageNum ? "default" : "outline"}
+                        size="sm"
+                        onClick={() => handlePageChange(pageNum)}
+                        className="h-8 w-8 sm:h-9 sm:w-9 p-0 text-xs sm:text-sm"
+                      >
+                        {pageNum}
+                      </Button>
                     )
-                  }
-                  
-                  const pageNum = Number(page)
-                  return (
-                    <Button
-                      key={pageNum}
-                      variant={currentPage === pageNum ? "default" : "outline"}
-                      size="sm"
-                      onClick={() => handlePageChange(pageNum)}
-                      className="h-9 w-9 p-0"
-                    >
-                      {pageNum}
-                    </Button>
-                  )
-                })}
+                  })}
+                </div>
               </div>
               
+              {/* Next button - always visible */}
               <Button
                 variant="outline"
                 size="sm"
                 onClick={() => handlePageChange(Math.min(currentPage + 1, totalPages))}
                 disabled={currentPage === totalPages}
-                className="h-9 px-3"
+                className="h-8 px-2 sm:h-9 sm:px-3 text-xs sm:text-sm"
               >
-                Next
-                <ChevronRight className="h-4 w-4 ml-1" />
+                <span className="hidden sm:inline">Next</span>
+                <ChevronRight className="h-3 w-3 sm:h-4 sm:w-4 sm:ml-1" />
               </Button>
+            </div>
+            
+            {/* Mobile: Show total count at bottom */}
+            <div className="text-xs text-muted-foreground text-center sm:hidden order-3">
+              {totalFilteredProducts} total products
             </div>
           </div>
         )}
