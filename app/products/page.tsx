@@ -24,9 +24,8 @@ interface ExtendedProduct extends Product {
 }
 
 export default function ProductsPage() {
-  const [products, setProducts] = useState<ExtendedProduct[]>([])
   const [allProducts, setAllProducts] = useState<ExtendedProduct[]>([])
-  const [localProducts, setLocalProducts] = useState<ExtendedProduct[]>([]) // Store locally added products
+  const [localProducts, setLocalProducts] = useState<ExtendedProduct[]>([])
   const [searchTerm, setSearchTerm] = useState("")
   const [isLoading, setIsLoading] = useState(true)
   const [selectedProduct, setSelectedProduct] = useState<ExtendedProduct | null>(null)
@@ -34,8 +33,7 @@ export default function ProductsPage() {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
   const [isViewDialogOpen, setIsViewDialogOpen] = useState(false)
   const [currentPage, setCurrentPage] = useState(1)
-  const [totalProducts, setTotalProducts] = useState(0)
-  const [nextLocalId, setNextLocalId] = useState(1000) // Start local IDs from 1000
+  const [nextLocalId, setNextLocalId] = useState(1000)
   const [filters, setFilters] = useState<ProductFiltersType>({
     sortBy: "title",
     sortOrder: "asc",
@@ -60,7 +58,7 @@ export default function ProductsPage() {
     loadAllProducts()
   }, [])
 
-  // Memoized filter application for better performance
+  // Memoized filtered products - this is the key fix
   const filteredProducts = useMemo(() => {
     let filtered = [...allProducts]
 
@@ -116,16 +114,10 @@ export default function ProductsPage() {
     return filtered
   }, [allProducts, searchTerm, filters, normalizeCategory])
 
-  // Update products when filtered results change
+  // Reset to first page when filters change - this is another key fix
   useEffect(() => {
-    setProducts(filteredProducts)
-    setTotalProducts(filteredProducts.length)
-    
-    // Reset to first page when filters change
-    if (currentPage > 1) {
-      setCurrentPage(1)
-    }
-  }, [filteredProducts, currentPage])
+    setCurrentPage(1)
+  }, [searchTerm, filters.category, filters.minPrice, filters.maxPrice, filters.sortBy, filters.sortOrder])
 
   const loadAllProducts = async () => {
     try {
@@ -140,7 +132,6 @@ export default function ProductsPage() {
       // Combine API products with local products
       const combinedProducts = [...apiProducts, ...localProducts]
       setAllProducts(combinedProducts)
-      setTotalProducts(combinedProducts.length)
     } catch (error) {
       console.error("Error loading products:", error)
       toast({
@@ -150,25 +141,30 @@ export default function ProductsPage() {
       })
       // If API fails, just show local products
       setAllProducts([...localProducts])
-      setTotalProducts(localProducts.length)
     } finally {
       setIsLoading(false)
     }
   }
 
-  // Get paginated products for display
-  const getPaginatedProducts = useMemo(() => {
-    const startIndex = (currentPage - 1) * productsPerPage
-    const endIndex = startIndex + productsPerPage
-    return products.slice(startIndex, endIndex)
-  }, [products, currentPage, productsPerPage])
+  // Calculate pagination values based on filtered products
+  const totalFilteredProducts = filteredProducts.length
+  const totalPages = Math.ceil(totalFilteredProducts / productsPerPage)
+  const startIndex = (currentPage - 1) * productsPerPage
+  const endIndex = startIndex + productsPerPage
+
+  // Get paginated products for display - fixed to use filteredProducts
+  const paginatedProducts = useMemo(() => {
+    return filteredProducts.slice(startIndex, endIndex)
+  }, [filteredProducts, startIndex, endIndex])
 
   // Enhanced pagination logic with sliding window
   const getPaginationPages = useCallback(() => {
-    const totalPages = Math.ceil(products.length / productsPerPage)
     const pages = []
     const delta = 2
     const range = []
+    
+    // Don't show pagination if only one page
+    if (totalPages <= 1) return []
     
     for (let i = Math.max(2, currentPage - delta); 
          i <= Math.min(totalPages - 1, currentPage + delta); 
@@ -191,7 +187,14 @@ export default function ProductsPage() {
     return range.filter((page, index, arr) => {
       return page !== arr[index - 1]
     })
-  }, [products.length, currentPage, productsPerPage])
+  }, [totalPages, currentPage])
+
+  // Ensure current page is valid when total pages change
+  useEffect(() => {
+    if (currentPage > totalPages && totalPages > 0) {
+      setCurrentPage(totalPages)
+    }
+  }, [currentPage, totalPages])
 
   const handleAddProduct = useCallback(() => {
     setSelectedProduct(null)
@@ -314,6 +317,7 @@ export default function ProductsPage() {
     }
     setFilters(resetFilters)
     setSearchTerm("")
+    setCurrentPage(1)
   }, [])
 
   const handleFiltersChange = useCallback((newFilters: ProductFiltersType) => {
@@ -324,7 +328,11 @@ export default function ProductsPage() {
     setSearchTerm(newSearchTerm)
   }, [])
 
-  const totalPages = Math.ceil(products.length / productsPerPage)
+  const handlePageChange = useCallback((page: number) => {
+    setCurrentPage(page)
+    // Smooth scroll to top of table
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+  }, [])
 
   if (isLoading) {
     return (
@@ -379,7 +387,7 @@ export default function ProductsPage() {
         />
 
         {/* Products Table */}
-        {products.length === 0 ? (
+        {filteredProducts.length === 0 ? (
           <EmptyState
             icon={Package}
             title={searchTerm || filters.category ? "No products found" : "No products yet"}
@@ -403,7 +411,7 @@ export default function ProductsPage() {
               {/* Mobile Card View */}
               <div className="block lg:hidden">
                 <div className="divide-y divide-border">
-                  {getPaginatedProducts.map((product) => (
+                  {paginatedProducts.map((product) => (
                     <div key={product.id} className="p-4 hover:bg-muted/30 transition-colors">
                       <div className="flex items-start space-x-3">
                         <div className="w-16 h-16 sm:w-20 sm:h-20 bg-muted rounded-lg flex items-center justify-center overflow-hidden shrink-0">
@@ -495,7 +503,7 @@ export default function ProductsPage() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {getPaginatedProducts.map((product) => (
+                    {paginatedProducts.map((product) => (
                       <TableRow key={product.id} className="hover:bg-muted/50 transition-colors">
                         <TableCell>
                           <div className="flex items-center space-x-3">
@@ -582,14 +590,14 @@ export default function ProductsPage() {
         {totalPages > 1 && (
           <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
             <p className="text-sm text-muted-foreground">
-              Showing {(currentPage - 1) * productsPerPage + 1} to{" "}
-              {Math.min(currentPage * productsPerPage, products.length)} of {products.length} products
+              Showing {startIndex + 1} to{" "}
+              {Math.min(endIndex, totalFilteredProducts)} of {totalFilteredProducts} products
             </p>
             <div className="flex items-center space-x-1">
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+                onClick={() => handlePageChange(Math.max(currentPage - 1, 1))}
                 disabled={currentPage === 1}
                 className="h-9 px-3"
               >
@@ -613,7 +621,7 @@ export default function ProductsPage() {
                       key={pageNum}
                       variant={currentPage === pageNum ? "default" : "outline"}
                       size="sm"
-                      onClick={() => setCurrentPage(pageNum)}
+                      onClick={() => handlePageChange(pageNum)}
                       className="h-9 w-9 p-0"
                     >
                       {pageNum}
@@ -625,7 +633,7 @@ export default function ProductsPage() {
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
+                onClick={() => handlePageChange(Math.min(currentPage + 1, totalPages))}
                 disabled={currentPage === totalPages}
                 className="h-9 px-3"
               >
