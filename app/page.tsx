@@ -85,7 +85,7 @@ export default function DashboardPage() {
           <CardContent className="space-y-4">
             <div className="flex flex-col gap-2">
               <Link href="/products">
-                <Button className="w-full justify-start" variant="default">
+                <Button className="w-full justify-start cursor-pointer" variant="default">
                   <Package className="mr-2 h-4 w-4" />
                   View All Products
                 </Button>
@@ -110,7 +110,7 @@ export default function DashboardPage() {
           <CardContent className="space-y-4">
             <div className="flex flex-col gap-2">
               <Link href="/categories">
-                <Button className="w-full justify-start" variant="default">
+                <Button className="w-full justify-start cursor-pointer" variant="default">
                   <Tag className="mr-2 h-4 w-4" />
                   View All Categories
                 </Button>

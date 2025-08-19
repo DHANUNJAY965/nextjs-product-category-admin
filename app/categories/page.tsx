@@ -155,7 +155,7 @@ export default function CategoriesPage() {
             <h1 className="text-3xl font-bold text-foreground">Categories</h1>
             <p className="text-muted-foreground">Manage your product categories</p>
           </div>
-          <Button onClick={handleAddCategory} className="w-full sm:w-auto">
+          <Button onClick={handleAddCategory} className="w-full sm:w-auto cursor-pointer">
             <Plus className="mr-2 h-4 w-4" />
             Add Category
           </Button>
@@ -172,11 +172,7 @@ export default function CategoriesPage() {
               className="pl-10"
             />
           </div>
-          <div className="flex items-center gap-2">
-            <Badge variant="secondary" className="text-sm">
-              {filteredCategories.length} categories
-            </Badge>
-          </div>
+          
         </div>
 
         {/* Categories Grid */}
@@ -201,7 +197,7 @@ export default function CategoriesPage() {
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {filteredCategories.map((category) => (
-              <Card key={category.id} className="hover:shadow-lg transition-all duration-200 hover:-translate-y-1">
+              <Card key={category.id} className="hover:shadow-lg transition-all duration-200 hover:-translate-y-1 cursor-pointer">
                 <CardHeader className="pb-3">
                   <div className="flex items-start justify-between">
                     <div className="flex items-center space-x-2">
@@ -213,7 +209,7 @@ export default function CategoriesPage() {
                         variant="ghost"
                         size="sm"
                         onClick={() => handleEditCategory(category)}
-                        className="h-8 w-8 p-0 hover:bg-primary/10"
+                        className="h-8 w-8 p-0 hover:bg-primary/10 cursor-pointer"
                       >
                         <Edit className="h-4 w-4" />
                       </Button>
@@ -221,7 +217,7 @@ export default function CategoriesPage() {
                         variant="ghost"
                         size="sm"
                         onClick={() => handleDeleteCategory(category)}
-                        className="h-8 w-8 p-0 text-destructive hover:text-destructive hover:bg-destructive/10"
+                        className="h-8 w-8 p-0 text-destructive hover:text-destructive hover:bg-destructive/10 cursor-pointer"
                       >
                         <Trash2 className="h-4 w-4" />
                       </Button>
